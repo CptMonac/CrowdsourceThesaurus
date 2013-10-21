@@ -1,52 +1,150 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+  <meta name="viewport" content="width=device-width">
+  <meta charset="UTF-8">
+  <title>The Great Thesaurus game??</title>
+  <style type="text/css">
+    body {
+      margin: 2em;
+      padding: 0;
+      font-family: helvetica,arial,sans-serif;
+      text-align: center
+    }
+    canvas {
+      display: block;
+      background: #eee;
+      float:left;
+      margin-top: 1em;
+    }
+    input[type=text] {
+    display: block;
+    border: none;
+    margin-top: 3em;
+    position: relative;
+    color: #333;
+    background: transparent;
+    border-bottom: 1px dotted black;
+    padding: 5px 2px 0 2px;
+  }
+    input:focus {
+    outline: none;
+    border-color: #51CBEE;
+    }
+    .clear{
+      clear:both;
+    }
+  </style>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body>
+  <div style="margin-top: 0.5cm; margin-bottom: 0.5cm;font-size:20pt"><center>Create sentences that mean the same thing</center></div>
+  <canvas></canvas>
+<script>
+  var canvas = document.querySelector('canvas');
+  var context = canvas.getContext('2d');
+  var elapsedTime = 0;
+  var timeLimit = 60;
+  var corpus = "Peter Sergeant (died 1714) was a merchant in Boston, Massachusetts, United States in the late 17th and early 18th century. Born in England, he moved to Boston and prospered as a merchant. He served as town constable in 1674, and as a Councillor 1692–1703 and 1707–1714. He was a member of the Third Church congregation[1] attending services at the Cedar House and later at the Old South Meeting House. He was also associated with the New England Company. During the 1689 Boston revolt, he participated in the Committee of Safety that ousted governor Edmund Andros.[2] In 1679, Sergeant built a large house on old Marlborough Street, and lived there for most of the rest of his life. He left briefly 1699–ca.1700, in order to accommodate royal governor Richard Coote, 1st Earl of Bellomont. (After 1716 the Sergeant House was known as the Province House).[3] Sergeant married four times: to Elizabeth Corwin; to Elizabeth, daughter of Henry Shrimpton (1682–1700); to Mary Phips (1701–1706); and to Mehitable Cooper (1706–1714).[4][5] His funeral was held on February 13, 1714; he is buried in the Granary Burying Ground."
+  var noun_corpus = ['Peter', 'Seargeant', 'Boston', 'Massachusetts', 'Church', 'Councillor', 'Edmund', 'Andros', 'Safety', 'England', 'Mehitabe', 'Bellomont'];
 
-  <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="Crowdsourcethesaurus : Experiments creating a crowdsourced game" />
+  (function setupCanvas()
+  {
+    canvas.height = 260;
+    canvas.width = 480;
+    //Draw house outline
+    context.moveTo(100, 25);
+    context.lineWidth = 2;
+    context.lineTo(300, 25);
+    context.lineTo(325, 100);
+    context.lineTo(150, 100);
+    context.closePath();
+    context.stroke();
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    context.moveTo(100, 25);
+    context.lineTo(25, 100)
+    context.moveTo(30, 95);
+    context.lineTo(30, 200);
+    context.lineTo(150, 200);
+    context.stroke();
 
-    <title>Crowdsourcethesaurus</title>
-  </head>
+    context.moveTo(150, 100);
+    context.lineTo(150, 200);
+    context.lineTo(325, 190);
+    context.lineTo(325, 100);
+    context.closePath();
+    context.stroke();
 
-  <body>
+    context.strokeRect(68, 125, 40, 75);
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/CptMonac/CrowdsourceThesaurus">View on GitHub</a>
+    //Write Original Text
+    var text = document.createElement('p');
+    text.style.width = '600px';
+    text.style.float = "left";
+    text.style.marginLeft = "1cm";
+    text.style.textAlign = "left";
+    text.appendChild(document.createTextNode(corpus));
+    document.body.appendChild(text);
 
-          <h1 id="project_title">Crowdsourcethesaurus</h1>
-          <h2 id="project_tagline">Experiments creating a crowdsourced game</h2>
+    //Add input element
+    var separator = document.createElement('div');
+    separator.className = 'clear';
+    var userInput = document.createElement('input');
+    userInput.type = 'text';
+    userInput.id = 'userInput';
+    userInput.placeholder = 'Enter sentence here';
+    document.body.appendChild(separator);
+    document.body.appendChild(userInput);
 
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/CptMonac/CrowdsourceThesaurus/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/CptMonac/CrowdsourceThesaurus/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
+    //Draw timer
+    context.save();
+    context.fillStyle = "red";
+    context.fillRect(450, 0, 50, canvas.height);
+    context.restore();
+    var counter = setInterval(countDown, 1000);
+  })();
 
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h1>
-<a name="crowdsourcethesaurus" class="anchor" href="#crowdsourcethesaurus"><span class="octicon octicon-link"></span></a>CrowdsourceThesaurus</h1>
+  function resizeInput(event)
+  {
+    $(this).attr('size', $(this).val().length);
 
-<p>Experiments creating a crowdsourced game</p>
-      </section>
-    </div>
+    if (event.keyCode === 13)
+    {
+      var sentence = $('#userInput').val();
+      context.save()
+      context.font = "20px Georgia";
+      var textLocation = {'x': Math.random()*(200)+100, 'y': Math.random()*(150)+40};
+      context.fillText(sentence, textLocation.x, textLocation.y);
+      context.restore();
+      $('#userInput').val("");
+    }
+  }
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Crowdsourcethesaurus maintained by <a href="https://github.com/CptMonac">CptMonac</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
+  function countDown()
+  {
+    if (elapsedTime >= timeLimit)
+    {  
+      if (typeof counter != 'undefined')
+        clearInterval(counter);
+      $('#userInput').hide();
+      return;
+    }
+    else
+    {
+      elapsedTime++;
+      //Clear rectangle
+      context.save();
+      context.fillStyle = "red";
+      context.clearRect(450,0, 50, canvas.height);
+      var height = canvas.height - (canvas.height/timeLimit)*elapsedTime;
+      context.fillRect(450, 0, 50, height);
+      context.restore();
+      if (elapsedTime == timeLimit)
+        $('#userInput').hide();
+    }
+  }
 
-    
-
-  </body>
+  $('input[type="text"]').keyup(resizeInput);
+</script>  
+</body>
 </html>
